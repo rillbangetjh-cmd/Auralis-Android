@@ -19,27 +19,33 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Ekstrak ZIP dan Perbaiki Mesin Gradle
+      - name: Ekstrak ZIP dan Perbaiki Struktur Proyek
         run: |
           echo "Mengestrak file ZIP..."
           unzip -o *.zip
           
-          # Cari folder utama proyek
-          PROJECT_DIR=$(dirname "$(find . -name "build.gradle*" | head -n 1)")
-          cd "$PROJECT_DIR"
+          # Cari lokasi folder utama tempat settings.gradle / settings.gradle.kts berada
+          SETTINGS_FILE=$(find . -name "settings.gradle*" | head -n 1)
           
-          # Jika file gradlew tidak ada, buat secara otomatis
-          if [ ! -f "gradlew" ]; then
-            echo "File gradlew hilang, membuat gradlew baru otomatis..."
-            gradle wrapper
+          if [ -z "$SETTINGS_FILE" ]; then
+            echo "GAGAL: File settings.gradle tidak ditemukan! ZIP Anda mungkin rusak."
+            exit 1
           fi
+          
+          ROOT_DIR=$(dirname "$SETTINGS_FILE")
+          echo "Folder utama proyek ditemukan di: $ROOT_DIR"
+          cd "$ROOT_DIR"
+          
+          # Pasang gradle wrapper di root project
+          gradle wrapper
           
           chmod +x gradlew
           echo "Mulai merakit APK..."
-          ./gradlew assembleDebug
+          ./gradlew assembleDebug --stacktrace
 
       - name: Upload Hasil APK
         uses: actions/upload-artifact@v4
         with:
           name: Auralis-APK
           path: ./**/*.apk
+          
