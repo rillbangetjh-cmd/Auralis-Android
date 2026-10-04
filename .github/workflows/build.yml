@@ -4,6 +4,7 @@ on:
     branches:
       - main
       - master
+  workflow_dispatch:
 
 jobs:
   build:
@@ -18,16 +19,22 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Ekstrak ZIP dan Rakit APK
+      - name: Cek File dan Ekstrak
         run: |
-          # 1. Mengekstrak file zip yang Anda upload
-          unzip -q *.zip
+          echo "Mengecek daftar file yang ter-upload..."
+          ls -la
           
-          # 2. Mencari otomatis di mana letak folder mesinnya (gradle)
+          echo "Mengekstrak file ZIP..."
+          unzip -q *.zip || { echo "GAGAL: File ZIP tidak ditemukan di repository!"; exit 1; }
+          
+          echo "Mencari file gradlew..."
           GRADLE_DIR=$(dirname "$(find . -name gradlew | head -n 1)")
-          cd "$GRADLE_DIR"
+          if [ -z "$GRADLE_DIR" ] || [ "$GRADLE_DIR" = "." ] && [ ! -f "gradlew" ]; then
+            echo "GAGAL: File gradlew tidak ditemukan! Struktur ZIP salah."
+            exit 1
+          fi
           
-          # 3. Merakit aplikasi
+          cd "$GRADLE_DIR"
           chmod +x gradlew
           ./gradlew assembleDebug
 
