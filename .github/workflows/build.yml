@@ -19,23 +19,23 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Cek File dan Ekstrak
+      - name: Ekstrak ZIP dan Perbaiki Mesin Gradle
         run: |
-          echo "Mengecek daftar file yang ter-upload..."
-          ls -la
+          echo "Mengestrak file ZIP..."
+          unzip -o *.zip
           
-          echo "Mengekstrak file ZIP..."
-          unzip -q *.zip || { echo "GAGAL: File ZIP tidak ditemukan di repository!"; exit 1; }
+          # Cari folder utama proyek
+          PROJECT_DIR=$(dirname "$(find . -name "build.gradle*" | head -n 1)")
+          cd "$PROJECT_DIR"
           
-          echo "Mencari file gradlew..."
-          GRADLE_DIR=$(dirname "$(find . -name gradlew | head -n 1)")
-          if [ -z "$GRADLE_DIR" ] || [ "$GRADLE_DIR" = "." ] && [ ! -f "gradlew" ]; then
-            echo "GAGAL: File gradlew tidak ditemukan! Struktur ZIP salah."
-            exit 1
+          # Jika file gradlew tidak ada, buat secara otomatis
+          if [ ! -f "gradlew" ]; then
+            echo "File gradlew hilang, membuat gradlew baru otomatis..."
+            gradle wrapper
           fi
           
-          cd "$GRADLE_DIR"
           chmod +x gradlew
+          echo "Mulai merakit APK..."
           ./gradlew assembleDebug
 
       - name: Upload Hasil APK
